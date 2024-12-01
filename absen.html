@@ -11,12 +11,11 @@
     <div class="profile-container">
         <a class="btn btn-secondary dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
             <div class="photo-card">
-                <img src="profil.jpg" alt="User Photo" id="userPhoto">
                 <span id="photoUsername" class="photo-username"></span>
             </div>
         </a>
         <ul class="dropdown-menu">
-          <li><a class="dropdown-item" id="logoutButton">Keluar</a></li>
+            <li><a class="dropdown-item" id="logoutButton">Keluar</a></li>
         </ul>
     </div>
 
@@ -35,6 +34,7 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
         import { getFirestore, collection, addDoc, query, where, getDocs } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
 
+        // Firebase configuration
         const firebaseConfig = {
             apiKey: "AIzaSyDEe4nakmggzLYa7ZVOWlpiqWAEHcXN2jA",
             authDomain: "bsi-absen.firebaseapp.com",
@@ -45,9 +45,38 @@
             measurementId: "G-JV2FYDF7M8"
         };
 
+        // Initialize Firebase
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
+        // Lokasi yang diizinkan
+        const ALLOWED_LOCATION = {
+            latitude: 5.566901, // Latitude lokasi yang diizinkan
+            longitude: 95.367047, // Longitude lokasi yang diizinkan
+            radius: 100 // Radius dalam meter
+        };
+
+        // Fungsi menghitung jarak
+        function haversine(lat1, lon1, lat2, lon2) {
+            const R = 6371000; // Radius bumi dalam meter
+            const phi1 = lat1 * (Math.PI / 180);
+            const phi2 = lat2 * (Math.PI / 180);
+            const deltaPhi = (lat2 - lat1) * (Math.PI / 180);
+            const deltaLambda = (lon2 - lon1) * (Math.PI / 180);
+
+            const a = Math.sin(deltaPhi / 2) ** 2 +
+                      Math.cos(phi1) * Math.cos(phi2) * Math.sin(deltaLambda / 2) ** 2;
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+            return R * c; // Jarak dalam meter
+        }
+
+        function isWithinAllowedArea(userLat, userLon) {
+            const distance = haversine(userLat, userLon, ALLOWED_LOCATION.latitude, ALLOWED_LOCATION.longitude);
+            return distance <= ALLOWED_LOCATION.radius;
+        }
+
+        // Fungsi untuk menyimpan data absen
         async function saveAbsenData(username, noID) {
             try {
                 const userRef = collection(db, "absen");
@@ -72,73 +101,66 @@
             }
         }
 
-        async function checkIfUserHasAbsenToday(username) {
-            const absenRef = collection(db, "absen");
-            const today = new Date().toISOString().split('T')[0];
-            const q = query(absenRef, where("nama", "==", username), where("tanggal", "==", today));
+        // Validasi lokasi sebelum absen
+        function checkLocationBeforeAbsen() {
+            if (!navigator.geolocation) {
+                alert("Perangkat Anda tidak mendukung Geolocation.");
+                return;
+            }
 
-            const querySnapshot = await getDocs(q);
-            return !querySnapshot.empty;
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    const userLat = position.coords.latitude;
+                    const userLon = position.coords.longitude;
+
+                    if (isWithinAllowedArea(userLat, userLon)) {
+                        saveAbsenData(loggedInUsername, loggedInnoID);
+                    } else {
+                        alert("Anda berada di luar lokasi yang diizinkan untuk absen.");
+                    }
+                },
+                (error) => {
+                    console.error("Error mendapatkan lokasi:", error);
+                    alert("Gagal mendapatkan lokasi. Pastikan GPS Anda aktif.");
+                }
+            );
         }
 
+        // Ambil data username dan No ID yang sudah login
         const loggedInUsername = localStorage.getItem("loggedInUsername");
         const loggedInnoID = localStorage.getItem("loggedInnoID");
 
         if (loggedInUsername) {
             document.getElementById("photoUsername").innerText = loggedInUsername;
 
-            checkIfUserHasAbsenToday(loggedInUsername).then((hasAbsen) => {
-                if (hasAbsen) {
-                    document.getElementById("absenButton").disabled = true;
-                    document.getElementById("absenButton").style.backgroundColor = "#28a745";
-                    document.getElementById("absenButton").innerText = "Sudah Absen";
-                    document.getElementById("absenStatus").innerText = " ";
-                } else {
-                    const now = new Date();
-                    const hours = now.getHours();
-                    if (hours >= 8 && hours < 24) {
-                        document.getElementById("absenButton").disabled = false;
-                        document.getElementById("absenStatus").innerText = "";
-                    } else {
-                        document.getElementById("absenButton").disabled = true;
-                        document.getElementById("absenStatus").innerText = " ";
-                    }
-                }
+            // Event listener untuk tombol absen
+            document.getElementById("absenButton").addEventListener("click", () => {
+                checkLocationBeforeAbsen();
             });
         } else {
             alert("Tidak ada pengguna yang login. Harap login terlebih dahulu.");
             window.location.href = "login.html";
         }
 
-        document.getElementById("absenButton").addEventListener("click", () => {
-            saveAbsenData(loggedInUsername, loggedInnoID);
-        });
-
+        // Fungsi logout
         document.getElementById("logoutButton").addEventListener("click", function() {
             localStorage.removeItem("loggedInUsername");
             localStorage.removeItem("loggedInnoID");
             window.location.href = "login.html";
         });
+        
 
-        // Fungsi untuk menampilkan tanggal secara realtime
-        function formatTanggal(tanggal) {
-            const hari = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
-            const bulan = [
-                'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
-                'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
-            ];
-
-            const namaHari = hari[tanggal.getDay()];
-            const namaBulan = bulan[tanggal.getMonth()];
-            const tahun = tanggal.getFullYear();
-            const tanggalHariIni = tanggal.getDate();
-
-            return `${namaHari}, ${tanggalHariIni} ${namaBulan} ${tahun}`;
+        //js untuk tanggal
+        // Fungsi untuk menampilkan tanggal dalam format "Senin, 28 Oktober 2024"
+        function updateDate() {
+            const now = new Date();
+            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            const formattedDate = now.toLocaleDateString('id-ID', options); // Format sesuai dengan bahasa Indonesia
+            document.getElementById("currentDate").innerText = formattedDate;
         }
-
-        document.getElementById("currentDate").innerText = formatTanggal(new Date());
+        // Memperbarui tanggal setiap detik
+        setInterval(updateDate, 1000);
     </script>
-
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
 </body>
 </html>
