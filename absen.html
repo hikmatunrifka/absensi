@@ -144,7 +144,7 @@
             const tahun = tanggal.getFullYear();
             const tanggalHariIni = tanggal.getDate();
 
-            return ${namaHari}, ${tanggalHariIni} ${namaBulan} ${tahun};
+            return `${namaHari}, ${tanggalHariIni} ${namaBulan} ${tahun}`;
         }
 
         document.getElementById("currentDate").innerText = formatTanggal(new Date());
