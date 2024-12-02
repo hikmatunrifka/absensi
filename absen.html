@@ -131,33 +131,23 @@
             window.location.href = "login.html";
         });
 
-   // Fungsi untuk memformat tanggal
-function formatTanggal(tanggal) {
-    const hari = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
-    const bulan = [
-        'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
-        'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
-    ];
+        // Fungsi untuk menampilkan tanggal secara realtime
+        function formatTanggal(tanggal) {
+            const hari = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+            const bulan = [
+                'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+                'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+            ];
 
-    const namaHari = hari[tanggal.getDay()];
-    const namaBulan = bulan[tanggal.getMonth()];
-    const tahun = tanggal.getFullYear();
-    const tanggalHariIni = tanggal.getDate();
+            const namaHari = hari[tanggal.getDay()];
+            const namaBulan = bulan[tanggal.getMonth()];
+            const tahun = tanggal.getFullYear();
+            const tanggalHariIni = tanggal.getDate();
 
-    return `${namaHari}, ${tanggalHariIni} ${namaBulan} ${tahun}`;
-}
+            return ${namaHari}, ${tanggalHariIni} ${namaBulan} ${tahun};
+        }
 
-// Fungsi untuk memperbarui tanggal secara realtime
-function updateTanggalRealtime() {
-    const now = new Date();
-    document.getElementById("currentDate").innerText = formatTanggal(now);
-}
-
-// Jalankan fungsi setiap detik untuk memastikan tanggal realtime
-setInterval(updateTanggalRealtime, 1000);
-
-// Panggilan pertama untuk menampilkan tanggal segera saat halaman dimuat
-updateTanggalRealtime();
+        document.getElementById("currentDate").innerText = formatTanggal(new Date());
     </script>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
